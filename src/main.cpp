@@ -1,86 +1,153 @@
-#include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <Preferences.h> // To store Wi-Fi credentials
+#include <SPIFFS.h>
 
-#define redLed 13
-#define blueLed 12
+#define RESET_BUTTON_PIN 14
+#define RESET_HOLD_TIME 10000
 
-const char* ssid = "e307";
-const char* password = "rockyCartoon544";
-
-const char* PARAM_INPUT_1 = "led";
-const char* PARAM_INPUT_2 = "state";
-
+Preferences preferences;
 AsyncWebServer server(80);
 
-void updateLED(String led, String state) {
-  int ledPin;
-  if (led == "red") {
-    ledPin = redLed;
-  } else if (led == "blue") {
-    ledPin = blueLed;
-  } else {
-    return;
-  }
-  Serial.println(ledPin);
+const char* apSSID = "ESP32_Felix"; // Name of ESP32 access point
+const char* apPassword = "password"; // Password (at least 8 characters)
 
-  digitalWrite(ledPin, state == "true" ? HIGH : LOW);
+void startAccessPoint() {
+    WiFi.softAP(apSSID, apPassword);
+    Serial.println("Started Access Point: " + String(apSSID));
 }
 
+void handleApRootRequest(AsyncWebServerRequest *request) {
+    String html = R"rawliteral(
+    <html><body>
+    <h2>Wi-Fi Setup</h2>
+    <form action="/save" method="POST">
+      SSID: <input type="text" name="ssid"><br>
+      Password: <input type="password" name="password"><br>
+      <input type="submit" value="Save">
+    </form>
+    </body></html>
+    )rawliteral";
+    request->send(200, "text/html", html);
+}
+
+void handleApSaveRequest(AsyncWebServerRequest *request) {
+    if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
+        String ssid = request->getParam("ssid", true)->value();
+        String password = request->getParam("password", true)->value();
+
+        preferences.putString("ssid", ssid);
+        preferences.putString("password", password);
+
+        request->send(200, "text/plain", "Saved! Rebooting...");
+        delay(2000);
+        ESP.restart();
+    } else {
+        request->send(400, "text/plain", "Missing SSID or Password");
+    }
+}
+
+void handleHelloWorldRequest(AsyncWebServerRequest *request) {
+    File file = SPIFFS.open("/hello.txt", "r");
+    Serial.println("fileStatus:");
+    Serial.println(file);
+
+    if (!file) {
+        request->send(500, "text/plain", "Failed to open file");
+        return;
+    }
+
+    Serial.println(file.available());
+
+    while(file.available()){
+      Serial.write(file.read());
+    }
+    file.close();
+
+    request->send(200, "text/plain", "ø");
+}
+
+volatile unsigned long pressStartTime = 0;  
+volatile bool buttonPressed = false;
+
+void IRAM_ATTR buttonISR() {
+    if (digitalRead(RESET_BUTTON_PIN) == LOW) {  
+        pressStartTime = millis();  // Record press time
+        buttonPressed = true;  // Set flag
+    } else {
+        buttonPressed = false;  // Reset flag when released
+    }
+}
+
+enum states {AP, STA};
+
+enum states currentState = AP;
+
 void setup() {
-  Serial.begin(9600);
+  delay(5000); // Delay for 5 seconds to allow time to connect via serial
 
-  pinMode(redLed, OUTPUT);
-  digitalWrite(redLed, LOW);
-  pinMode(blueLed, OUTPUT);
-  digitalWrite(blueLed, LOW);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
 
-  delay(5000);
-  Serial.println("Booting...");
+  Serial.begin(115200);
+  preferences.begin("wifi", false); // Open Preferences
 
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi...");
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
+
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
   }
 
-  Serial.println("\nConnected to WiFi!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
+  String savedSSID = preferences.getString("ssid", "");
+  String savedPassword = preferences.getString("password", "");
 
-  pinMode(LED_BUILTIN, OUTPUT); // Initialize the LED pin as an output
-  digitalWrite(LED_BUILTIN, HIGH); // Turn the LED on
+  currentState = savedSSID == "" ? AP : STA;
 
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "Hello, world");
-  });
+  switch (currentState)
+  {
+    case STA:
+      Serial.println("Connecting to Wi-Fi...");
+      WiFi.begin(savedSSID.c_str(), savedPassword.c_str());
 
-  server.on("/update", HTTP_PATCH, [] (AsyncWebServerRequest *request) {
-    String inputMessage1;
-    String inputMessage2;
-    // GET input1 value on <ESP_IP>/update?led=<inputMessage1>&state=<inputMessage2>
-    if (request->hasParam(PARAM_INPUT_1) && request->hasParam(PARAM_INPUT_2)) {
-      inputMessage1 = request->getParam(PARAM_INPUT_1)->value();
-      inputMessage2 = request->getParam(PARAM_INPUT_2)->value();
+      if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+        Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
+      }
 
-      updateLED(inputMessage1, inputMessage2);
-    } 
-    else {
-      inputMessage1 = "No message sent";
-      inputMessage2 = "No message sent";
-    }
-    Serial.print("LED: ");
-    Serial.print(inputMessage1);
-    Serial.print(" - Set to: ");
-    Serial.println(inputMessage2);
-    request->send(200, "text/plain", "OK");
-  });
+      server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "text/plain", "Hello, World!");
+      });
+
+      server.on("/hello", HTTP_GET, handleHelloWorldRequest);
+
+      break;
+    
+    default:
+      Serial.println("Starting Access Point mode...");
+      startAccessPoint();
+
+      server.on("/", HTTP_GET, handleApRootRequest);
+      server.on("/save", HTTP_POST, handleApSaveRequest);
+      break;
+  }
 
   server.begin();
 }
 
 void loop() {
+  if (buttonPressed && (millis() - pressStartTime >= RESET_HOLD_TIME)) {
+    Serial.println("Resetting Wi-Fi credentials...");
+
+    for (int i = 0; i < 5; i++) {
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(100);
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(100);
+    }
+
+    preferences.clear();
+    ESP.restart();
+  }
 }
