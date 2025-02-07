@@ -1,61 +1,28 @@
 #include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <Preferences.h>
 #include <SPIFFS.h>
 #include "time.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "webserver_setup.h"
+#include "preferences_handler.h"
 
 #define RESET_BUTTON_PIN 14
 #define RESET_HOLD_TIME 10000
 
-Preferences preferences;
-AsyncWebServer server(80);
-
 #define TEMPERATURE_PIN 4     
-
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensors(&oneWire);
-
-const char* apSSID = "ESP32_Felix"; // Name of ESP32 access point
-const char* apPassword = "password"; // Password (at least 8 characters)
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 0;
 
+const char* apSSID = "ESP32_Felix";
+const char* apPassword = "password";
+
 void startAccessPoint() {
     WiFi.softAP(apSSID, apPassword);
     Serial.println("Started Access Point: " + String(apSSID));
-}
-
-void serveHTMLPage(AsyncWebServerRequest *request, String fileName) {
-    File file = SPIFFS.open(fileName, "r");
-    if (!file) {
-        request->send(500, "text/plain", "Failed to open file");
-        return;
-    }
-
-    String html = file.readString();
-    file.close();
-    request->send(200, "text/html", html);
-}
-
-void handleApSaveRequest(AsyncWebServerRequest *request) {
-    if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
-        String ssid = request->getParam("ssid", true)->value();
-        String password = request->getParam("password", true)->value();
-
-        preferences.putString("ssid", ssid);
-        preferences.putString("password", password);
-
-        request->send(200, "text/plain", "Saved! Rebooting...");
-        delay(2000);
-        ESP.restart();
-    } else {
-        request->send(400, "text/plain", "Missing SSID or Password");
-    }
 }
 
 volatile unsigned long pressStartTime = 0;  
@@ -81,7 +48,6 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
 
   Serial.begin(115200);
-  preferences.begin("wifi", false); // Open Preferences
 
   pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
@@ -91,11 +57,15 @@ void setup() {
     return;
   }
 
-  String savedSSID = preferences.getString("ssid", "");
-  String savedPassword = preferences.getString("password", "");
+  initPreferences(); // Initialize preferences
+
+  String savedSSID = getSSID();
+  String savedPassword = getPassword();
 
   currentState = savedSSID == "" ? AP : STA;
 
+  setupWebSocket();
+  
   switch (currentState)
   {
     case STA:
@@ -126,13 +96,7 @@ void setup() {
         }
       }
 
-      server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "text/plain", "Hello, World!");
-      });
-
-      server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(SPIFFS, "/temperature_data.csv", "text/csv");
-      });
+      setupSTAWebServer();
 
       break;
     
@@ -140,10 +104,7 @@ void setup() {
       Serial.println("Starting Access Point mode...");
       startAccessPoint();
 
-      server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        serveHTMLPage(request, "/ap_root.html");
-      });
-      server.on("/save", HTTP_POST, handleApSaveRequest);
+      setupAPWebServer();
       break;
   }
 
@@ -151,7 +112,7 @@ void setup() {
   server.begin();
 }
 
-void logTemperatureToCSV() {
+void logTemperature() {
   time_t now;       // Declare a variable to store the current time
   time(&now);       // Get the current time in seconds since Unix Epoch
 
@@ -159,6 +120,7 @@ void logTemperatureToCSV() {
   float temperatureC = sensors.getTempCByIndex(0);
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
+  sendTemperatureUpdate(String(now) + ";" + String(temperatureC));
 
   File file = SPIFFS.open("/temperature_data.csv", FILE_APPEND);
   if (file) {
@@ -172,8 +134,9 @@ void logTemperatureToCSV() {
 unsigned long previousMillis = 0;  // Store the last time the timestamp was printed
 const long interval = 10000;        // Interval at which to print the timestamp (1 second)
 
-
 void loop() {
+  handleWebSocket();
+
   if (buttonPressed && (millis() - pressStartTime >= RESET_HOLD_TIME)) {
     Serial.println("Resetting Wi-Fi credentials...");
 
@@ -184,7 +147,7 @@ void loop() {
       delay(100);
     }
 
-    preferences.clear();
+    clearPreferences();
     ESP.restart();
   }
 
@@ -192,7 +155,7 @@ void loop() {
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
-      logTemperatureToCSV();
+      logTemperature();
     }
   }
 }
