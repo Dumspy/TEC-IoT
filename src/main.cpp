@@ -1,10 +1,11 @@
 #include <WiFi.h>
-#include <SPIFFS.h>
 #include "time.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "webserver_setup.h"
 #include "preferences_handler.h"
+#include "websocket_handler.h"
+#include "storage_handler.h"
 
 #define RESET_BUTTON_PIN 14
 #define RESET_HOLD_TIME 10000
@@ -13,12 +14,12 @@
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensors(&oneWire);
 
+const char* apSSID = "ESP32_Felix";
+const char* apPassword = "password";
+
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 0;
-
-const char* apSSID = "ESP32_Felix";
-const char* apPassword = "password";
 
 void startAccessPoint() {
     WiFi.softAP(apSSID, apPassword);
@@ -52,11 +53,6 @@ void setup() {
   pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
 
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-
   initPreferences(); // Initialize preferences
 
   String savedSSID = getSSID();
@@ -64,7 +60,6 @@ void setup() {
 
   currentState = savedSSID == "" ? AP : STA;
 
-  setupWebSocket();
   
   switch (currentState)
   {
@@ -85,25 +80,16 @@ void setup() {
           return;
       }
 
-      if (!SPIFFS.exists("/temperature_data.csv")) {
-        File file = SPIFFS.open("/temperature_data.csv", FILE_WRITE);
-        if (file) {
-          file.println("timestamp;temp");
-          file.close();
-          Serial.println("Created temperature_data.csv with headers.");
-        } else {
-          Serial.println("Failed to create temperature_data.csv");
-        }
-      }
-
+      setupStorage();
+      setupWebSocket();
       setupSTAWebServer();
 
       break;
     
     default:
       Serial.println("Starting Access Point mode...");
+      
       startAccessPoint();
-
       setupAPWebServer();
       break;
   }
@@ -120,19 +106,13 @@ void logTemperature() {
   float temperatureC = sensors.getTempCByIndex(0);
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
-  sendTemperatureUpdate(String(now) + ";" + String(temperatureC));
 
-  File file = SPIFFS.open("/temperature_data.csv", FILE_APPEND);
-  if (file) {
-    file.printf("%ld;%.2f\n", now, temperatureC);
-    file.close();
-  } else {
-    Serial.println("Failed to open temperature_data.csv for appending");
-  }
+  logTemperatureToCSV(now, temperatureC);
+  sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}");
 }
 
 unsigned long previousMillis = 0;  // Store the last time the timestamp was printed
-const long interval = 10000;        // Interval at which to print the timestamp (1 second)
+const long interval = 30000;        // Interval at which to log temperature (milliseconds)
 
 void loop() {
   handleWebSocket();
