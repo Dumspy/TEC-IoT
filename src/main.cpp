@@ -112,7 +112,7 @@ void logTemperature() {
 }
 
 unsigned long previousMillis = 0;  // Store the last time the timestamp was printed
-const long interval = 30000;        // Interval at which to log temperature (milliseconds)
+const long interval = 1000 * 60 * 5;        // Interval at which to log temperature (milliseconds)
 
 void loop() {
   handleWebSocket();

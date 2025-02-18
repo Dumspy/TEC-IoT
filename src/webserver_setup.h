@@ -52,6 +52,11 @@ void handleDeleteRowRequest(AsyncWebServerRequest *request) {
     }
 }
 
+void handleClearWifiRequest(AsyncWebServerRequest *request) {
+    clearPreferences();
+    request->send(200, "text/plain", "WiFi credentials cleared");
+}
+
 void setupSTAWebServer() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, "/sta_root.html", "text/html");
@@ -80,6 +85,8 @@ void setupSTAWebServer() {
     server.on("/add-row", HTTP_POST, handleAddRowRequest);
 
     server.on("/delete-row", HTTP_POST, handleDeleteRowRequest);
+
+    server.on("/clear-wifi", HTTP_POST, handleClearWifiRequest);
 }
 
 void setupAPWebServer() {

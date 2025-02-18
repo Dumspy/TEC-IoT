@@ -77,6 +77,11 @@ async function deleteRow() {
     }
 }
 
+async function clearWifi() {
+    await fetch('/clear-wifi', { method: 'POST' });
+    alert('WiFi credentials cleared');
+}
+
 const ctx = document.getElementById('tempChart').getContext('2d');
 const tempChart = new Chart(ctx, {
     type: 'line',
