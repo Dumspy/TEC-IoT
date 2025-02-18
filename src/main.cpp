@@ -66,18 +66,26 @@ void syncTimeWithNTP()
 
   while (retryCount < maxNTPRetries && !timeSynced)
   {
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo))
+    if (WiFi.status() == WL_CONNECTED)
     {
-      Serial.println("Failed to obtain time, retrying...");
-      retryCount++;
-      delay(2000); // Wait for 2 seconds before retrying
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      struct tm timeinfo;
+      if (!getLocalTime(&timeinfo))
+      {
+        Serial.println("Failed to obtain time, retrying...");
+        retryCount++;
+        delay(2000); // Wait for 2 seconds before retrying
+      }
+      else
+      {
+        Serial.println("Time synchronized with NTP");
+        timeSynced = true;
+      }
     }
     else
     {
-      Serial.println("Time synchronized with NTP");
-      timeSynced = true;
+      Serial.println("Wi-Fi not connected, cannot sync time.");
+      break;
     }
   }
 
@@ -121,7 +129,7 @@ void setup()
     const int maxWifiRetries = 5;
     while (WiFi.status() != WL_CONNECTED && retryCount < maxWifiRetries)
     {
-      Serial.println("Retrying Wi-Fi("+ savedSSID +") connection...");
+      Serial.println("Retrying Wi-Fi(" + savedSSID + ") connection...");
       delay(2000); // Wait for 2 seconds before retrying
       retryCount++;
     }
