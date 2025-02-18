@@ -89,6 +89,9 @@ String getInitialDataJSON(int maxEntries = 100)
         return "{}";
     }
 
+    // Skip the header row
+    file.readStringUntil('\n');
+
     // Use a circular buffer approach to store the last N entries
     String lines[maxEntries];
     int count = 0;
@@ -152,7 +155,16 @@ void removeRowByTimestamp(time_t timestamp)
     std::vector<String> lines;
     while (file.available())
     {
-        lines.push_back(file.readStringUntil('\n')); // Read all lines
+        String line = file.readStringUntil('\n');
+        int sep = line.indexOf(';');
+        if (sep > 0)
+        {
+            time_t rowTimestamp = line.substring(0, sep).toInt();
+            if (rowTimestamp != timestamp)
+            {
+                lines.push_back(line); // Only keep lines that do not match the timestamp
+            }
+        }
     }
     file.close();
 
@@ -160,17 +172,10 @@ void removeRowByTimestamp(time_t timestamp)
     if (!file)
         return;
 
+    file.println("timestamp;temp"); // Write the header back
     for (const auto &line : lines)
     {
-        int sep = line.indexOf(';');
-        if (sep > 0)
-        {
-            time_t rowTimestamp = line.substring(0, sep).toInt();
-            if (rowTimestamp != timestamp)
-            {
-                file.println(line); // Write back all lines except the one to be removed
-            }
-        }
+        file.println(line); // Write back all lines except the one to be removed
     }
     file.close();
 }

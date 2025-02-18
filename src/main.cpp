@@ -178,8 +178,8 @@ void logTemperature()
 }
 
 // Variables to handle the interval at which to log temperature
-unsigned long previousMillis = 0;    // Store the last time the timestamp was printed
-const long interval = 1000 * 60 * 5; // Interval at which to log temperature (milliseconds)
+unsigned long previousTempMillis = 0;    // Store the last time the timestamp was printed
+const long tempInterval = 1000 * 10 * 1; // Interval at which to log temperature (milliseconds)
 
 // Variables to handle the interval at which to sync time with NTP
 unsigned long previousSyncMillis = 0;     // Store the last time the time was synced
@@ -209,9 +209,9 @@ void loop()
   if (currentState == STA)
   {
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval)
+    if (currentMillis - previousTempMillis >= tempInterval)
     {
-      previousMillis = currentMillis;
+      previousTempMillis = currentMillis;
       logTemperature();
     }
 

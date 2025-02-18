@@ -25,7 +25,6 @@ void handleApSaveRequest(AsyncWebServerRequest *request)
         savePassword(password);
 
         request->send(200, "text/plain", "Saved! Rebooting...");
-        delay(2000);   // Delay to allow the response to be sent before rebooting
         ESP.restart(); // Restart the ESP32
     }
     else
@@ -75,8 +74,8 @@ void handleDeleteRowRequest(AsyncWebServerRequest *request)
 void handleClearWifiRequest(AsyncWebServerRequest *request)
 {
     clearPreferences(); // Clear the WiFi credentials
-    ESP.restart();      // Restart the ESP32
     request->send(200, "text/plain", "WiFi credentials cleared");
+    ESP.restart();      // Restart the ESP32
 }
 
 // Setup the web server for standard mode defining all routes needed
