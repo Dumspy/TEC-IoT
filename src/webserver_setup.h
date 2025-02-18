@@ -75,6 +75,7 @@ void handleDeleteRowRequest(AsyncWebServerRequest *request)
 void handleClearWifiRequest(AsyncWebServerRequest *request)
 {
     clearPreferences(); // Clear the WiFi credentials
+    ESP.restart();      // Restart the ESP32
     request->send(200, "text/plain", "WiFi credentials cleared");
 }
 

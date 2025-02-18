@@ -70,9 +70,8 @@ void addRowToCSV(const String &row)
 // - maxEntries: The maximum number of entries to retrieve (default is 100)
 // Returns: A JSON string containing the initial data
 String getInitialDataJSON(int maxEntries = 100)
-{              // Default: 100 entries
+{
     delay(50); // Ensure previous file operations are completed
-    Serial.println("getInitialDataJSON called");
     StaticJsonDocument<8192> doc; // Increase buffer size if needed
     JsonArray history = doc.to<JsonArray>();
 
@@ -106,11 +105,9 @@ String getInitialDataJSON(int maxEntries = 100)
     int validEntries = min(count, maxEntries);
 
     Serial.printf("Reading %d entries starting from index %d\n", validEntries, start);
-    Serial.println("Entries:");
     for (int i = 0; i < validEntries; i++)
     {
         int index = (start + i) % maxEntries;
-        Serial.println(lines[index]);
         if (lines[index].length() > 0)
         {
             int sep = lines[index].indexOf(';');
