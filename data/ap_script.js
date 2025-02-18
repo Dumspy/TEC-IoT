@@ -1,4 +1,4 @@
-document.getElementById('wifiForm').addEventListener('submit', async function(event) {
+document.getElementById('wifiForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     const form = event.target;
     const formData = new FormData(form);

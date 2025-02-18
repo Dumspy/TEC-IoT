@@ -12,7 +12,7 @@ async function loadInitialData() {
 function connectWebSocket() {
     socket = new WebSocket('ws://' + window.location.hostname + '/ws');
 
-    socket.onmessage = function(event) {
+    socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
         updateChart(data.timestamp, data.temp);
         addTimestampToDropdown(data.timestamp);
@@ -20,7 +20,8 @@ function connectWebSocket() {
 }
 
 function updateChart(timestamp, newTemp) {
-    const timeString = new Date(timestamp * 1000).toLocaleTimeString();
+    const date = new Date(timestamp * 1000);
+    const timeString = date.toLocaleString();
     tempChart.data.labels.push(timeString);
     tempChart.data.datasets[0].data.push(newTemp);
 
@@ -79,9 +80,9 @@ async function deleteRow() {
         });
         alert('Row deleted');
         select.remove(select.selectedIndex);
-        
+
         // Update the chart
-        const timeString = new Date(timestamp * 1000).toLocaleTimeString();
+        const timeString = new Date(timestamp * 1000).toLocaleString();
         const index = tempChart.data.labels.indexOf(timeString);
         if (index !== -1) {
             tempChart.data.labels.splice(index, 1);
