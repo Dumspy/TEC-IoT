@@ -47,6 +47,32 @@ void IRAM_ATTR buttonISR() {
 enum states {AP, STA}; // Access Point or Standard mode
 enum states currentState = AP; // Default state is Access Point
 
+// Function to sync time with NTP with retry mechanism
+void syncTimeWithNTP() {
+    const int maxRetries = 5;
+    int retryCount = 0;
+    bool timeSynced = false;
+
+    while (retryCount < maxRetries && !timeSynced) {
+        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+        struct tm timeinfo;
+        if (!getLocalTime(&timeinfo)) {
+            Serial.println("Failed to obtain time, retrying...");
+            retryCount++;
+            delay(2000); // Wait for 2 seconds before retrying
+        } else {
+            Serial.println("Time synchronized with NTP");
+            timeSynced = true;
+        }
+    }
+
+    if (!timeSynced) {
+        Serial.println("Failed to synchronize time with NTP after " + String(maxRetries) + " attempts");
+        Serial.println("Restarting...");
+        ESP.restart();
+    }
+}
+
 void setup() {
   delay(5000); // Delay for 5 seconds to allow time to connect via serial
 
@@ -75,16 +101,7 @@ void setup() {
         Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
       }
 
-      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
-      // Wait for time to be set
-      struct tm timeinfo;
-      if (!getLocalTime(&timeinfo)) {
-          Serial.println("Failed to obtain time");
-          Serial.println("Restarting...");
-          ESP.restart();
-          return;
-      }
+      syncTimeWithNTP(); // Sync time with NTP
 
       setupStorage(); // Initialize storage
       setupWebSocket(); // Initialize WebSocket
@@ -122,6 +139,10 @@ void logTemperature() {
 unsigned long previousMillis = 0;  // Store the last time the timestamp was printed
 const long interval = 1000 * 60 * 5; // Interval at which to log temperature (milliseconds)
 
+// Variables to handle the interval at which to sync time with NTP
+unsigned long previousSyncMillis = 0;  // Store the last time the time was synced
+const long syncInterval = 1000 * 60 * 30; // Interval at which to sync time (milliseconds)
+
 void loop() {
   handleWebSocket(); // Handle WebSocket clients
 
@@ -145,6 +166,12 @@ void loop() {
     if (currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
       logTemperature();
+    }
+
+    // Sync time with NTP at the specified interval
+    if (currentMillis - previousSyncMillis >= syncInterval) {
+      previousSyncMillis = currentMillis;
+      syncTimeWithNTP();
     }
   }
 }
