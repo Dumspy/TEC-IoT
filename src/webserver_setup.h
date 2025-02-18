@@ -103,6 +103,11 @@ void setupAPWebServer() {
         request->send(SPIFFS, "/ap_root.html", "text/html"); // Serve the root HTML page for AP mode
     });
 
+    server.on("/ap_script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(SPIFFS, "/ap_script.js", "text/javascript"); // Serve the JavaScript file
+    });
+
+
     server.on("/save", HTTP_POST, handleApSaveRequest); // Handle requests to save the SSID and password
 }
 

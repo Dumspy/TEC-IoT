@@ -44,11 +44,13 @@
     </style>
 </head>
 <body>
-    <form action="/save" method="POST">
+    <form id="wifiForm">
         <h2>Wi-Fi Setup</h2>
         SSID: <input type="text" name="ssid"><br>
         Password: <input type="password" name="password"><br>
         <input type="submit" value="Save">
     </form>
+    <div id="message"></div>
+    <script src="ap_script.js"></script>
 </body>
 </html>

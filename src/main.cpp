@@ -28,6 +28,7 @@ void startAccessPoint()
 {
   WiFi.softAP(apSSID, apPassword);
   Serial.println("Started Access Point: " + String(apSSID));
+  Serial.println("Configure using 192.168.4.1");
 }
 
 // Variables to handle the reset button press
@@ -107,6 +108,8 @@ void setup()
 
   currentState = savedSSID == "" ? AP : STA; // Set the current state based on saved Wi-Fi credentials
 
+  setupStorage();
+
   switch (currentState)
   {
   case STA:
@@ -118,7 +121,7 @@ void setup()
     const int maxWifiRetries = 5;
     while (WiFi.status() != WL_CONNECTED && retryCount < maxWifiRetries)
     {
-      Serial.println("Retrying Wi-Fi connection...");
+      Serial.println("Retrying Wi-Fi("+ savedSSID +") connection...");
       delay(2000); // Wait for 2 seconds before retrying
       retryCount++;
     }
@@ -126,8 +129,7 @@ void setup()
     if (WiFi.status() == WL_CONNECTED)
     {
       Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
-      syncTimeWithNTP();   // Sync time with NTP
-      setupStorage();      // Initialize storage
+      syncTimeWithNTP();   // Sync time with NTP   // Initialize storage
       setupWebSocket();    // Initialize WebSocket
       setupSTAWebServer(); // Setup the web server for standard mode
     }
