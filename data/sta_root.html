@@ -27,17 +27,17 @@
         button:hover {
             background-color: #45a049;
         }
-        #deleteButton {
-            background-color: #f44336;
-        }
-        #deleteButton:hover {
-            background-color: #e53935;
-        }
-        .clearButton {
+        .blueButton {
             background-color: #2196F3;
         }
-        .clearButton:hover {
+        .blueButton:hover {
             background-color: #1E88E5;
+        }
+        .dangerButton {
+            background-color: #f44336;
+        }
+        .dangerButton:hover {
+            background-color: #e53935;
         }
         #latestTemp {
             text-align: center;
@@ -53,12 +53,12 @@
 <body>
     <div id="latestTemp">Latest Temperature: N/A</div>
     <canvas id="tempChart"></canvas>
-    <button onclick="downloadCSV()">Download CSV</button>
-    <button class="clearButton" onclick="clearCSV()">Clear CSV</button>
+    <button class="blueButton" onclick="downloadCSV()">Download CSV</button>
     <button onclick="addRow()">Add Row</button>
     <select id="timestampSelect"></select>
-    <button id="deleteButton" onclick="deleteRow()">Delete Selected Row</button>
-    <button class="clearButton" onclick="clearWifi()">Clear WiFi Settings</button>
+    <button class="dangerButton" onclick="deleteRow()">Delete Selected Row</button>
+    <button class="dangerButton" onclick="clearCSV()">Clear CSV</button>
+    <button class="dangerButton" onclick="clearWifi()">Clear WiFi Settings</button>
     <script src="sta_script.js"></script>
 </body>
 </html>

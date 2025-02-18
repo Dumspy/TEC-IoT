@@ -54,6 +54,7 @@ async function addRow() {
         alert('Row added');
         const [timestamp, temp] = row.split(';');
         addTimestampToDropdown(timestamp);
+        updateChart(timestamp, temp);
     }
 }
 
