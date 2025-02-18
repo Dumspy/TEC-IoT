@@ -14,21 +14,26 @@
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensors(&oneWire);
 
+// Access Point default credentials
 const char* apSSID = "ESP32_Felix";
 const char* apPassword = "password";
 
+// NTP settings
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 0;
 
+// Start the ESP32 in Access Point mode
 void startAccessPoint() {
     WiFi.softAP(apSSID, apPassword);
     Serial.println("Started Access Point: " + String(apSSID));
 }
 
-volatile unsigned long pressStartTime = 0;  
-volatile bool buttonPressed = false;
+// Variables to handle the reset button press
+volatile unsigned long pressStartTime = 0; // Store the time the button was pressed
+volatile bool buttonPressed = false; // Flag to indicate if the button is pressed
 
+// Interrupt Service Routine for the reset button
 void IRAM_ATTR buttonISR() {
     if (digitalRead(RESET_BUTTON_PIN) == LOW) {  
         pressStartTime = millis();  // Record press time
@@ -38,9 +43,9 @@ void IRAM_ATTR buttonISR() {
     }
 }
 
-enum states {AP, STA};
-
-enum states currentState = AP;
+// Enum to handle the current state of the ESP32
+enum states {AP, STA}; // Access Point or Standard mode
+enum states currentState = AP; // Default state is Access Point
 
 void setup() {
   delay(5000); // Delay for 5 seconds to allow time to connect via serial
@@ -55,12 +60,11 @@ void setup() {
 
   initPreferences(); // Initialize preferences
 
-  String savedSSID = getSSID();
-  String savedPassword = getPassword();
+  String savedSSID = getSSID(); // Get saved Wi-Fi SSID
+  String savedPassword = getPassword(); // Get saved Wi-Fi Password
 
-  currentState = savedSSID == "" ? AP : STA;
+  currentState = savedSSID == "" ? AP : STA; // Set the current state based on saved Wi-Fi credentials
 
-  
   switch (currentState)
   {
     case STA:
@@ -77,27 +81,30 @@ void setup() {
       struct tm timeinfo;
       if (!getLocalTime(&timeinfo)) {
           Serial.println("Failed to obtain time");
+          Serial.println("Restarting...");
+          ESP.restart();
           return;
       }
 
-      setupStorage();
-      setupWebSocket();
-      setupSTAWebServer();
+      setupStorage(); // Initialize storage
+      setupWebSocket(); // Initialize WebSocket
+      setupSTAWebServer(); // Setup the web server for standard mode
 
       break;
     
     default:
       Serial.println("Starting Access Point mode...");
       
-      startAccessPoint();
-      setupAPWebServer();
+      startAccessPoint(); // Start the ESP32 in Access Point mode
+      setupAPWebServer(); // Setup the web server for AP mode
       break;
   }
 
-  sensors.begin();
-  server.begin();
+  sensors.begin(); // Initialize temperature sensors
+  server.begin(); // Start the web server
 }
 
+// Log the temperature reading to the CSV file and send it via WebSocket
 void logTemperature() {
   time_t now;       // Declare a variable to store the current time
   time(&now);       // Get the current time in seconds since Unix Epoch
@@ -107,19 +114,20 @@ void logTemperature() {
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
 
-  logTemperatureToCSV(now, temperatureC);
-  sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}");
+  logTemperatureToCSV(now, temperatureC); // Log the temperature to the CSV file
+  sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
 }
 
+// Variables to handle the interval at which to log temperature
 unsigned long previousMillis = 0;  // Store the last time the timestamp was printed
-const long interval = 1000 * 60 * 5;        // Interval at which to log temperature (milliseconds)
+const long interval = 1000 * 60 * 5; // Interval at which to log temperature (milliseconds)
 
 void loop() {
-  handleWebSocket();
+  handleWebSocket(); // Handle WebSocket clients
 
+  // Check if the reset button is pressed and held for the `RESET_HOLD_TIME` time
   if (buttonPressed && (millis() - pressStartTime >= RESET_HOLD_TIME)) {
     Serial.println("Resetting Wi-Fi credentials...");
-
     for (int i = 0; i < 5; i++) {
       digitalWrite(LED_BUILTIN, LOW);
       delay(100);
@@ -127,10 +135,11 @@ void loop() {
       delay(100);
     }
 
-    clearPreferences();
-    ESP.restart();
+    clearPreferences(); // Clear Wi-Fi credentials
+    ESP.restart(); // Restart the ESP
   }
 
+  // Log temperature at the specified interval if in standard mode
   if (currentState == STA){
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= interval) {
