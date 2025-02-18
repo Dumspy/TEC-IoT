@@ -23,6 +23,16 @@ function updateChart(timestamp, newTemp) {
     const timeString = new Date(timestamp * 1000).toLocaleTimeString();
     tempChart.data.labels.push(timeString);
     tempChart.data.datasets[0].data.push(newTemp);
+
+    // Sort the chart data by timestamp
+    const sortedData = tempChart.data.labels.map((label, index) => ({
+        label,
+        data: tempChart.data.datasets[0].data[index]
+    })).sort((a, b) => new Date(a.label) - new Date(b.label));
+
+    tempChart.data.labels = sortedData.map(item => item.label);
+    tempChart.data.datasets[0].data = sortedData.map(item => item.data);
+
     tempChart.update();
 
     // Update the latest temperature value
