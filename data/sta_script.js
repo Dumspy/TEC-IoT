@@ -81,6 +81,11 @@ async function deleteRow() {
     }
 }
 
+async function clearWifi() {
+    await fetch('/clear-wifi', { method: 'POST' });
+    alert('WiFi credentials cleared');
+}
+
 function downloadCSV() {
     window.location.href = '/temperature_data.csv';
 }
