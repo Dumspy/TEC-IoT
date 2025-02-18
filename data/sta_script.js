@@ -40,7 +40,7 @@ function addTimestampToDropdown(timestamp) {
 async function clearCSV() {
     await fetch('/clear-csv', { method: 'POST' });
     alert('CSV data cleared');
-    document.getElementById('timestampSelect').innerHTML = '';
+    window.location.reload();
 }
 
 async function addRow() {

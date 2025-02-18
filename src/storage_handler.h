@@ -153,13 +153,17 @@ void removeRowByTimestamp(time_t timestamp)
         return;
 
     std::vector<String> lines;
-    bool headerExists = false;
     while (file.available())
     {
         String line = file.readStringUntil('\n');
+        line.trim(); // Remove any leading or trailing whitespace
+        Serial.println("Read line: " + line);
+        if (line.length() == 0) // Skip empty lines
+            continue;
+
         if (line == "timestamp;temp")
         {
-            headerExists = true;
+            continue;
         }
         else
         {
@@ -176,22 +180,24 @@ void removeRowByTimestamp(time_t timestamp)
     }
     file.close();
 
-    file = SPIFFS.open(csvFilePath, "w");
+    const char *tempFilePath = "/temp_temperature_data.csv";
+    file = SPIFFS.open(tempFilePath, "w");
     if (!file)
         return;
 
-    if (headerExists)
-    {
-        file.println("timestamp;temp"); // Write the header back if it existed
-    }
+    file.println("timestamp;temp"); // Write the header back
     for (const auto &line : lines)
     {
         if (line.length() > 0) // Ensure no empty lines are written
         {
+            Serial.println("Writing line: " + line);
             file.println(line); // Write back all lines except the one to be removed
         }
     }
     file.close();
+
+    SPIFFS.remove(csvFilePath); // Remove the original file
+    SPIFFS.rename(tempFilePath, csvFilePath); // Rename the temporary file to the original file
 }
 
 #endif
