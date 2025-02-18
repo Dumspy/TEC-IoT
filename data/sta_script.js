@@ -24,6 +24,9 @@ function updateChart(timestamp, newTemp) {
     tempChart.data.labels.push(timeString);
     tempChart.data.datasets[0].data.push(newTemp);
     tempChart.update();
+
+    // Update the latest temperature value
+    document.getElementById('latestTemp').innerText = `Latest Temperature: ${newTemp} °C`;
 }
 
 function addTimestampToDropdown(timestamp) {
@@ -75,11 +78,6 @@ async function deleteRow() {
             tempChart.update();
         }
     }
-}
-
-async function clearWifi() {
-    await fetch('/clear-wifi', { method: 'POST' });
-    alert('WiFi credentials cleared');
 }
 
 const ctx = document.getElementById('tempChart').getContext('2d');
