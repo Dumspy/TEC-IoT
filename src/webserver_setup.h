@@ -14,18 +14,23 @@ AsyncWebServer server(80); // Create an AsyncWebServer object on port 80
 // Handle the request to save the SSID and password
 void handleApSaveRequest(AsyncWebServerRequest *request)
 {
-    if (request->hasParam("ssid", true) && request->hasParam("password", true))
-    {
-        // Get the SSID and password from the request
-        String ssid = request->getParam("ssid", true)->value();
-        String password = request->getParam("password", true)->value();
+    String ssid = "";
+    String password = "";
 
+    if(request->hasParam("ssid", true) && request->hasParam("password", true)){
+        ssid = request->getParam("ssid", true)->value();
+        password = request->getParam("password", true)->value();
+    }
+
+    if (ssid != "" && password != "")
+    {
         // Save the SSID and password to preferences
         saveSSID(ssid);
         savePassword(password);
 
         request->send(200, "text/plain", "Saved! Rebooting...");
-        ESP.restart(); // Restart the ESP32
+        delay(1000); // Wait for the response to be sent
+        ESP.restart(); // Restart the ESP32d
     }
     else
     {
