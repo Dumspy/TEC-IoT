@@ -157,7 +157,6 @@ void removeRowByTimestamp(time_t timestamp)
     {
         String line = file.readStringUntil('\n');
         line.trim(); // Remove any leading or trailing whitespace
-        Serial.println("Read line: " + line);
         if (line.length() == 0) // Skip empty lines
             continue;
 
@@ -190,7 +189,6 @@ void removeRowByTimestamp(time_t timestamp)
     {
         if (line.length() > 0) // Ensure no empty lines are written
         {
-            Serial.println("Writing line: " + line);
             file.println(line); // Write back all lines except the one to be removed
         }
     }
