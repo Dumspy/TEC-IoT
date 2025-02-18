@@ -153,16 +153,24 @@ void removeRowByTimestamp(time_t timestamp)
         return;
 
     std::vector<String> lines;
+    bool headerExists = false;
     while (file.available())
     {
         String line = file.readStringUntil('\n');
-        int sep = line.indexOf(';');
-        if (sep > 0)
+        if (line == "timestamp;temp")
         {
-            time_t rowTimestamp = line.substring(0, sep).toInt();
-            if (rowTimestamp != timestamp)
+            headerExists = true;
+        }
+        else
+        {
+            int sep = line.indexOf(';');
+            if (sep > 0)
             {
-                lines.push_back(line); // Only keep lines that do not match the timestamp
+                time_t rowTimestamp = line.substring(0, sep).toInt();
+                if (rowTimestamp != timestamp)
+                {
+                    lines.push_back(line); // Only keep lines that do not match the timestamp
+                }
             }
         }
     }
@@ -172,10 +180,16 @@ void removeRowByTimestamp(time_t timestamp)
     if (!file)
         return;
 
-    file.println("timestamp;temp"); // Write the header back
+    if (headerExists)
+    {
+        file.println("timestamp;temp"); // Write the header back if it existed
+    }
     for (const auto &line : lines)
     {
-        file.println(line); // Write back all lines except the one to be removed
+        if (line.length() > 0) // Ensure no empty lines are written
+        {
+            file.println(line); // Write back all lines except the one to be removed
+        }
     }
     file.close();
 }
