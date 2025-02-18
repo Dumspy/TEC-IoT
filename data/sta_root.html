@@ -3,30 +3,61 @@
 <head>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 16px;
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
         }
-        select {
-            display: block;
+        button, select {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
             font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #deleteButton {
+            background-color: #f44336;
+        }
+        #deleteButton:hover {
+            background-color: #e53935;
+        }
+        .clearButton {
+            background-color: #2196F3;
+        }
+        .clearButton:hover {
+            background-color: #1E88E5;
+        }
+        #latestTemp {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #tempChart {
+            max-width: 100%;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <div id="latestTemp">Latest Temperature: N/A</div>
     <canvas id="tempChart"></canvas>
-    <button onclick="clearCSV()">Clear CSV</button>
+    <button class="clearButton" onclick="clearCSV()">Clear CSV</button>
     <button onclick="addRow()">Add Row</button>
     <select id="timestampSelect"></select>
-    <button onclick="deleteRow()">Delete Selected Row</button>
-    <button onclick="clearWifi()">Clear WiFi Settings</button>
+    <button id="deleteButton" onclick="deleteRow()">Delete Selected Row</button>
+    <button class="clearButton" onclick="clearWifi()">Clear WiFi Settings</button>
     <script src="sta_script.js"></script>
 </body>
 </html>
