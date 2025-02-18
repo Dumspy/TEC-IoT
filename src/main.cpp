@@ -97,16 +97,25 @@ void setup() {
       Serial.println("Connecting to Wi-Fi...");
       WiFi.begin(savedSSID.c_str(), savedPassword.c_str());
 
-      if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-        Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
+      int retryCount = 0;
+      const int maxRetries = 5;
+      while (WiFi.status() != WL_CONNECTED && retryCount < maxRetries) {
+        Serial.println("Retrying Wi-Fi connection...");
+        delay(2000); // Wait for 2 seconds before retrying
+        retryCount++;
       }
 
-      syncTimeWithNTP(); // Sync time with NTP
-
-      setupStorage(); // Initialize storage
-      setupWebSocket(); // Initialize WebSocket
-      setupSTAWebServer(); // Setup the web server for standard mode
-
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
+        syncTimeWithNTP(); // Sync time with NTP
+        setupStorage(); // Initialize storage
+        setupWebSocket(); // Initialize WebSocket
+        setupSTAWebServer(); // Setup the web server for standard mode
+      } else {
+        Serial.println("Failed to connect to Wi-Fi after " + String(maxRetries) + " attempts. Resetting and starting Access Point mode...");
+        clearPreferences(); // Clear Wi-Fi credentials
+        ESP.restart(); // Restart the ESP32
+      }
       break;
     
     default:
@@ -157,7 +166,7 @@ void loop() {
     }
 
     clearPreferences(); // Clear Wi-Fi credentials
-    ESP.restart(); // Restart the ESP
+    ESP.restart(); // Restart the ESP32
   }
 
   // Log temperature at the specified interval if in standard mode

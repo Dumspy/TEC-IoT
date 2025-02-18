@@ -24,7 +24,7 @@ void handleApSaveRequest(AsyncWebServerRequest *request) {
 
         request->send(200, "text/plain", "Saved! Rebooting...");
         delay(2000); // Delay to allow the response to be sent before rebooting
-        ESP.restart(); // Restart the ESP
+        ESP.restart(); // Restart the ESP32
     } else {
         request->send(400, "text/plain", "Missing SSID or Password");
     }
