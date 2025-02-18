@@ -80,12 +80,16 @@ async function deleteRow() {
     }
 }
 
+function downloadCSV() {
+    window.location.href = '/temperature_data.csv';
+}
+
 const ctx = document.getElementById('tempChart').getContext('2d');
 const tempChart = new Chart(ctx, {
     type: 'line',
     data: {
         labels: [],
-        datasets: [{ label: 'Temperature (&deg;C)', data: [], borderColor: 'red', fill: false }]
+        datasets: [{ label: 'Temperature (°C)', data: [], borderColor: 'red', fill: false }]
     },
     options: {
         responsive: true,
