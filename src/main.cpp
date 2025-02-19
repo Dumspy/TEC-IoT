@@ -6,6 +6,7 @@
 #include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
+#include "websocket_handler.h"
 
 #define RESET_BUTTON_PIN 14
 #define RESET_HOLD_TIME 10000
@@ -138,15 +139,14 @@ void setup()
     if (WiFi.status() == WL_CONNECTED)
     {
       Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
-      syncTimeWithNTP();   // Sync time with NTP   // Initialize storage
-      setupWebSocket();    // Initialize WebSocket
+      syncTimeWithNTP();   // Sync time with NTP 
       setupSTAWebServer(); // Setup the web server for standard mode
     }
     else
     {
       Serial.println("Failed to connect to Wi-Fi after " + String(maxWifiRetries) + " attempts. Resetting and starting Access Point mode...");
       preferences.clearPreferences(); // Clear Wi-Fi credentials
-      ESP.restart();      // Restart the ESP32
+      ESP.restart(); // Restart the ESP32
     }
   }
   break;
@@ -174,8 +174,8 @@ void logTemperature()
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
 
-  logTemperatureToCSV(now, temperatureC);                                                                // Log the temperature to the CSV file
-  sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
+  logTemperatureToCSV(now, temperatureC); // Log the temperature to the CSV file
+  WebSocketHandler::getInstance().sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
 }
 
 // Variables to handle the interval at which to log temperature
@@ -188,7 +188,7 @@ const long syncInterval = 1000 * 60 * 30; // Interval at which to sync time (mil
 
 void loop()
 {
-  handleWebSocket(); // Handle WebSocket clients
+  WebSocketHandler::getInstance().handleWebSocket(); // Handle WebSocket clients
 
   // Check if the reset button is pressed and held for the `RESET_HOLD_TIME` time
   if (buttonPressed && (millis() - pressStartTime >= RESET_HOLD_TIME))
@@ -203,7 +203,7 @@ void loop()
     }
 
     PreferencesHandler::getInstance().clearPreferences(); // Clear Wi-Fi credentials
-    ESP.restart();      // Restart the ESP32
+    ESP.restart(); // Restart the ESP32
   }
 
   // Log temperature at the specified interval if in standard mode

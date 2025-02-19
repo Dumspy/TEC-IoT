@@ -8,6 +8,7 @@
 #include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
+#include "websocket_handler.h"
 
 AsyncWebServer server(80); // Create an AsyncWebServer object on port 80
 
@@ -121,6 +122,8 @@ void setupSTAWebServer()
     server.on("/delete-row", HTTP_POST, handleDeleteRowRequest); // Handle requests to delete a row from the CSV data
 
     server.on("/clear-wifi", HTTP_POST, handleClearWifiRequest); // Handle requests to clear the WiFi credentials
+
+    WebSocketHandler::getInstance().setupWebSocket(server); // Initialize WebSocket
 }
 
 // Setup the web server for access point mode defining all routes needed
