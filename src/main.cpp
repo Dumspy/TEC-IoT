@@ -180,7 +180,7 @@ void logTemperature()
 
 // Variables to handle the interval at which to log temperature
 unsigned long previousTempMillis = 0;    // Store the last time the timestamp was printed
-const long tempInterval = 1000 * 10 * 1; // Interval at which to log temperature (milliseconds)
+const long tempInterval = 1000 * 60 * 5; // Interval at which to log temperature (milliseconds)
 
 // Variables to handle the interval at which to sync time with NTP
 unsigned long previousSyncMillis = 0;     // Store the last time the time was synced
