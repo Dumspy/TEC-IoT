@@ -3,7 +3,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "webserver_handler.h"
-#include "preferences_handler.h"
+#include "preferences/preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
 
@@ -109,10 +109,10 @@ void setup()
   pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
 
-  initPreferences(); // Initialize preferences
+  PreferencesHandler &preferences = PreferencesHandler::getInstance();
 
-  String savedSSID = getSSID();         // Get saved Wi-Fi SSID
-  String savedPassword = getPassword(); // Get saved Wi-Fi Password
+  String savedSSID = preferences.getSSID();         // Get saved Wi-Fi SSID
+  String savedPassword = preferences.getPassword(); // Get saved Wi-Fi Password
 
   currentState = savedSSID == "" ? AP : STA; // Set the current state based on saved Wi-Fi credentials
 
@@ -145,7 +145,7 @@ void setup()
     else
     {
       Serial.println("Failed to connect to Wi-Fi after " + String(maxWifiRetries) + " attempts. Resetting and starting Access Point mode...");
-      clearPreferences(); // Clear Wi-Fi credentials
+      preferences.clearPreferences(); // Clear Wi-Fi credentials
       ESP.restart();      // Restart the ESP32
     }
   }
@@ -202,7 +202,7 @@ void loop()
       delay(100);
     }
 
-    clearPreferences(); // Clear Wi-Fi credentials
+    PreferencesHandler::getInstance().clearPreferences(); // Clear Wi-Fi credentials
     ESP.restart();      // Restart the ESP32
   }
 

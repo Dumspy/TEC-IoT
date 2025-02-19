@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
-#include "preferences_handler.h"
+#include "preferences/preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
 
@@ -25,12 +25,13 @@ void handleApSaveRequest(AsyncWebServerRequest *request)
     if (ssid != "" && password != "")
     {
         // Save the SSID and password to preferences
-        saveSSID(ssid);
-        savePassword(password);
+        PreferencesHandler &preferences = PreferencesHandler::getInstance();
+        preferences.saveSSID(ssid);
+        preferences.savePassword(password);
 
         request->send(200, "text/plain", "Saved! Rebooting...");
         delay(1000); // Wait for the response to be sent
-        ESP.restart(); // Restart the ESP32d
+        ESP.restart(); // Restart the ESP32
     }
     else
     {
@@ -78,7 +79,7 @@ void handleDeleteRowRequest(AsyncWebServerRequest *request)
 // Handle the request to clear the WiFi credentials
 void handleClearWifiRequest(AsyncWebServerRequest *request)
 {
-    clearPreferences(); // Clear the WiFi credentials
+    PreferencesHandler::getInstance().clearPreferences(); // Clear the WiFi credentials
     request->send(200, "text/plain", "WiFi credentials cleared");
     ESP.restart();      // Restart the ESP32
 }
