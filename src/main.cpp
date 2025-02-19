@@ -118,6 +118,7 @@ void setup()
 
   setupStorage();
 
+  // Switch case for setting up either Access Point or Standard mode
   switch (currentState)
   {
   case STA:
