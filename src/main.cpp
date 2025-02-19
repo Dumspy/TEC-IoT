@@ -6,7 +6,7 @@
 #include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
-#include "websocket_handler.h"
+#include "webserver_handler.h"
 
 #define RESET_BUTTON_PIN 14
 #define RESET_HOLD_TIME 10000
@@ -111,13 +111,14 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
 
   PreferencesHandler &preferences = PreferencesHandler::getInstance();
+  WebServerHandler &webServerHandler = WebServerHandler::getInstance();
 
   String savedSSID = preferences.getSSID();         // Get saved Wi-Fi SSID
   String savedPassword = preferences.getPassword(); // Get saved Wi-Fi Password
 
   currentState = savedSSID == "" ? AP : STA; // Set the current state based on saved Wi-Fi credentials
 
-  setupStorage();
+  StorageHandler::getInstance().setupStorage(); // Initialize storage
 
   // Switch case for setting up either Access Point or Standard mode
   switch (currentState)
@@ -140,7 +141,7 @@ void setup()
     {
       Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
       syncTimeWithNTP();   // Sync time with NTP 
-      setupSTAWebServer(); // Setup the web server for standard mode
+      webServerHandler.setupSTAWebServer(); // Setup the web server for standard mode
     }
     else
     {
@@ -148,6 +149,8 @@ void setup()
       preferences.clearPreferences(); // Clear Wi-Fi credentials
       ESP.restart(); // Restart the ESP32
     }
+
+    sensors.begin(); // Initialize temperature sensors
   }
   break;
 
@@ -155,12 +158,9 @@ void setup()
     Serial.println("Starting Access Point mode...");
 
     startAccessPoint(); // Start the ESP32 in Access Point mode
-    setupAPWebServer(); // Setup the web server for AP mode
+    webServerHandler.setupAPWebServer(); // Setup the web server for AP mode
     break;
   }
-
-  sensors.begin(); // Initialize temperature sensors
-  server.begin();  // Start the web server
 }
 
 // Log the temperature reading to the CSV file and send it via WebSocket
@@ -174,7 +174,7 @@ void logTemperature()
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
 
-  logTemperatureToCSV(now, temperatureC); // Log the temperature to the CSV file
+  StorageHandler::getInstance().logTemperatureToCSV(now, temperatureC); // Log the temperature to the CSV file
   WebSocketHandler::getInstance().sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
 }
 
