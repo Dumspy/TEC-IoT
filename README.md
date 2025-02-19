@@ -10,6 +10,7 @@
     1. [Fritzing diagram](#fritzing-diagram)
     2. [Fysisk setup](#fysisk-setup)
     3. [Web UI demo](#web-ui-demo)
+    4. [Flow charts](#flow-charts)
 
 ## Beskrivelse
 Dette projekt er en temperaturmåler, som måler temperaturen og viser den på en hjemmeside (som også kører på ESP32). Den er bygget med en ESP32 og en DS18B20 temperatursensor. Den måler temperaturen hvert 5. minut og viser den på en hjemmeside. Hjemmesiden opdateres automatisk.
@@ -63,3 +64,9 @@ Dette projekt er en temperaturmåler, som måler temperaturen og viser den på e
 Klik på billedet for at se en demovideo.
 
 [![Web UI Demo](https://img.youtube.com/vi/LTltwZoyWiU/0.jpg)](https://www.youtube.com/watch?v=LTltwZoyWiU)
+
+### Flow charts
+#### Start up flowchart:
+![Startup Flowchart](docs/startup_flowchart.png)
+#### Loop flowchart:
+![Loop Flowchart](docs/loop_flowchart.png)
