@@ -3,7 +3,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "webserver_handler.h"
-#include "preferences/preferences_handler.h"
+#include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
 

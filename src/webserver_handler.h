@@ -5,7 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
-#include "preferences/preferences_handler.h"
+#include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
 
