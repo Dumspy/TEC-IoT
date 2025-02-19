@@ -46,4 +46,4 @@ Dette projekt er en temperaturmåler, som måler temperaturen og viser den på e
 ![Fritzing Diagram](docs/fritzing_diagram.png)
 
 ## Demo
-
+[![Demo video](https://img.youtube.com/vi/LTltwZoyWiU/0.jpg)](https://www.youtube.com/watch?v=LTltwZoyWiU)
