@@ -6,6 +6,7 @@
 #include "preferences_handler.h"
 #include "websocket_handler.h"
 #include "storage_handler.h"
+#include "webserver_handler.h"
 
 #define RESET_BUTTON_PIN 14
 #define RESET_HOLD_TIME 10000
@@ -109,14 +110,15 @@ void setup()
   pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RESET_BUTTON_PIN), buttonISR, CHANGE);
 
-  initPreferences(); // Initialize preferences
+  PreferencesHandler &preferences = PreferencesHandler::getInstance();
+  WebServerHandler &webServerHandler = WebServerHandler::getInstance();
 
-  String savedSSID = getSSID();         // Get saved Wi-Fi SSID
-  String savedPassword = getPassword(); // Get saved Wi-Fi Password
+  String savedSSID = preferences.getSSID();         // Get saved Wi-Fi SSID
+  String savedPassword = preferences.getPassword(); // Get saved Wi-Fi Password
 
   currentState = savedSSID == "" ? AP : STA; // Set the current state based on saved Wi-Fi credentials
 
-  setupStorage();
+  StorageHandler::getInstance().setupStorage(); // Initialize storage
 
   // Switch case for setting up either Access Point or Standard mode
   switch (currentState)
@@ -138,16 +140,17 @@ void setup()
     if (WiFi.status() == WL_CONNECTED)
     {
       Serial.println("Connected! IP Address: " + WiFi.localIP().toString());
-      syncTimeWithNTP();   // Sync time with NTP   // Initialize storage
-      setupWebSocket();    // Initialize WebSocket
-      setupSTAWebServer(); // Setup the web server for standard mode
+      syncTimeWithNTP();   // Sync time with NTP 
+      webServerHandler.setupSTAWebServer(); // Setup the web server for standard mode
     }
     else
     {
       Serial.println("Failed to connect to Wi-Fi after " + String(maxWifiRetries) + " attempts. Resetting and starting Access Point mode...");
-      clearPreferences(); // Clear Wi-Fi credentials
-      ESP.restart();      // Restart the ESP32
+      preferences.clearPreferences(); // Clear Wi-Fi credentials
+      ESP.restart(); // Restart the ESP32
     }
+
+    sensors.begin(); // Initialize temperature sensors
   }
   break;
 
@@ -155,12 +158,9 @@ void setup()
     Serial.println("Starting Access Point mode...");
 
     startAccessPoint(); // Start the ESP32 in Access Point mode
-    setupAPWebServer(); // Setup the web server for AP mode
+    webServerHandler.setupAPWebServer(); // Setup the web server for AP mode
     break;
   }
-
-  sensors.begin(); // Initialize temperature sensors
-  server.begin();  // Start the web server
 }
 
 // Log the temperature reading to the CSV file and send it via WebSocket
@@ -174,8 +174,8 @@ void logTemperature()
 
   Serial.printf("%ld;%.2f\n", now, temperatureC);
 
-  logTemperatureToCSV(now, temperatureC);                                                                // Log the temperature to the CSV file
-  sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
+  StorageHandler::getInstance().logTemperatureToCSV(now, temperatureC); // Log the temperature to the CSV file
+  WebSocketHandler::getInstance().sendTemperatureUpdate("{\"timestamp\": " + String(now) + ", \"temp\": " + String(temperatureC) + "}"); // Send the temperature update via WebSocket
 }
 
 // Variables to handle the interval at which to log temperature
@@ -188,7 +188,7 @@ const long syncInterval = 1000 * 60 * 30; // Interval at which to sync time (mil
 
 void loop()
 {
-  handleWebSocket(); // Handle WebSocket clients
+  WebSocketHandler::getInstance().handleWebSocket(); // Handle WebSocket clients
 
   // Check if the reset button is pressed and held for the `RESET_HOLD_TIME` time
   if (buttonPressed && (millis() - pressStartTime >= RESET_HOLD_TIME))
@@ -202,8 +202,8 @@ void loop()
       delay(100);
     }
 
-    clearPreferences(); // Clear Wi-Fi credentials
-    ESP.restart();      // Restart the ESP32
+    PreferencesHandler::getInstance().clearPreferences(); // Clear Wi-Fi credentials
+    ESP.restart(); // Restart the ESP32
   }
 
   // Log temperature at the specified interval if in standard mode

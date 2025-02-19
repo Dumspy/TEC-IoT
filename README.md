@@ -1,4 +1,5 @@
 # Temperaturmåler
+
 ## Indholdsfortegnelse
 1. [Beskrivelse](#beskrivelse)
 2. [Filoversigt](#filoversigt)
@@ -17,11 +18,16 @@ Dette projekt er en temperaturmåler, som måler temperaturen og viser den på e
 ```plaintext
 /
 ├── src
-│   ├── main.cpp                 # Entry point for programmet
-│   ├── preferences_handler.h    # Utility fil til at samle funktioner til at gemme og hente preferences
-│   ├── storage_handler.h        # Utility fil til at samle funktioner til at gemme og hente data fra SPIFFS
-│   ├── webserver_setup.h        # Utility fil til at samle funktioner til at opsætte webserveren
-│   └── websocket_handler.h      # Utility fil til at samle funktioner til at håndtere websockets
+│   └── main.cpp                 # Entry point for programmet
+├── lib
+│   ├── preferences
+│   │   └── preferences.h/preferences.cpp         # Class til at håndtere opbevaring af wifi config i preferences
+│   ├── storage
+│   │   └── storage.h/storage.cpp                 # Class til at håndtere SPIFFS til opbevaring af temperaturdata
+│   ├── webserver
+│   │   └── webserver.h/webserver.cpp             # Class til at håndtere webserveren
+│   └── websocket
+│       └── websocket.h/websocket.cpp             # Class til at håndtere websockets
 ├── data
 │   ├── ap_root.html             # Root html filen til AP mode
 │   ├── ap_script.js             # Javascript fil til AP mode
